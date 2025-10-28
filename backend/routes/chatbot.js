@@ -53,6 +53,12 @@ router.post('/message', async (req, res) => {
 
     } catch (error) {
         console.error('ChatGPT API Error:', error);
+        console.error('Error details:', {
+            code: error.code,
+            type: error.type,
+            message: error.message,
+            status: error.status
+        });
         
         if (error.code === 'insufficient_quota') {
             return res.status(402).json({ 
@@ -60,15 +66,16 @@ router.post('/message', async (req, res) => {
             });
         }
         
-        if (error.code === 'invalid_api_key') {
+        if (error.code === 'invalid_api_key' || error.status === 401) {
             return res.status(401).json({ 
-                error: 'Invalid OpenAI API key' 
+                error: 'Invalid OpenAI API key. Please check your API key.' 
             });
         }
 
         res.status(500).json({ 
             error: 'Error communicating with ChatGPT',
-            message: error.message 
+            message: error.message,
+            details: error.code || error.type
         });
     }
 });
