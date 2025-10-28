@@ -1,7 +1,7 @@
 // College Guide - Main JavaScript
 
 // API Configuration
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://college-guide-v2-backend.onrender.com/api';
 
 // Check if user is logged in
 function isLoggedIn() {
