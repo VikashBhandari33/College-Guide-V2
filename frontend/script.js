@@ -501,4 +501,127 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Load todos on page load
     loadTodos();
+
+    // Chatbot functionality
+    const chatbotToggle = document.getElementById('chatbotToggle');
+    const chatbotWindow = document.getElementById('chatbotWindow');
+    const chatbotClose = document.getElementById('chatbotClose');
+    const chatInput = document.getElementById('chatInput');
+    const chatSend = document.getElementById('chatSend');
+    const chatMessages = document.getElementById('chatMessages');
+    
+    let conversationHistory = [];
+
+    // Toggle chatbot window
+    chatbotToggle && chatbotToggle.addEventListener('click', function() {
+        chatbotWindow.classList.toggle('hidden');
+        if (!chatbotWindow.classList.contains('hidden')) {
+            chatInput.focus();
+        }
+        feather.replace();
+    });
+
+    chatbotClose && chatbotClose.addEventListener('click', function() {
+        chatbotWindow.classList.add('hidden');
+    });
+
+    // Add message to chat
+    function addMessage(message, isUser = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `flex items-start space-x-2 ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`;
+        
+        messageDiv.innerHTML = `
+            <div class="${isUser ? 'bg-indigo-600' : 'bg-indigo-600'} text-white rounded-full p-2">
+                <i data-feather="${isUser ? 'user' : 'bot'}" class="h-4 w-4"></i>
+            </div>
+            <div class="${isUser ? 'bg-indigo-100' : 'bg-white'} rounded-lg p-3 shadow max-w-[80%]">
+                <p class="text-sm ${isUser ? 'text-indigo-900' : 'text-gray-800'}">${message}</p>
+            </div>
+        `;
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        feather.replace();
+    }
+
+    // Add typing indicator
+    function showTypingIndicator() {
+        const typingDiv = document.createElement('div');
+        typingDiv.id = 'typing-indicator';
+        typingDiv.className = 'flex items-start space-x-2';
+        typingDiv.innerHTML = `
+            <div class="bg-indigo-600 text-white rounded-full p-2">
+                <i data-feather="bot" class="h-4 w-4"></i>
+            </div>
+            <div class="bg-white rounded-lg p-3 shadow">
+                <div class="flex space-x-1">
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                </div>
+            </div>
+        `;
+        chatMessages.appendChild(typingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        feather.replace();
+    }
+
+    function removeTypingIndicator() {
+        const typing = document.getElementById('typing-indicator');
+        if (typing) typing.remove();
+    }
+
+    // Send message to chatbot
+    async function sendMessage() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        // Add user message to chat
+        addMessage(message, true);
+        chatInput.value = '';
+
+        // Show typing indicator
+        showTypingIndicator();
+
+        try {
+            const response = await api('/chatbot/message', 'POST', {
+                message: message,
+                conversationHistory: conversationHistory
+            });
+
+            // Remove typing indicator
+            removeTypingIndicator();
+
+            // Add bot response
+            addMessage(response.reply, false);
+
+            // Update conversation history
+            conversationHistory.push(
+                { role: 'user', content: message },
+                { role: 'assistant', content: response.reply }
+            );
+
+            // Keep only last 10 messages in history
+            if (conversationHistory.length > 20) {
+                conversationHistory = conversationHistory.slice(-20);
+            }
+
+        } catch (error) {
+            removeTypingIndicator();
+            console.error('Chatbot error:', error);
+            addMessage('Sorry, I encountered an error. Please try again or make sure the OpenAI API key is configured.', false);
+        }
+    }
+
+    // Send message on button click
+    chatSend && chatSend.addEventListener('click', sendMessage);
+
+    // Send message on Enter key
+    chatInput && chatInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
 });
+
