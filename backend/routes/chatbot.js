@@ -1,14 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const OpenAI = require('openai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// Initialize OpenAI
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // @route   POST /api/chatbot/message
-// @desc    Send message to ChatGPT
+// @desc    Send message to Gemini
 // @access  Public
 router.post('/message', async (req, res) => {
     try {
@@ -18,64 +16,44 @@ router.post('/message', async (req, res) => {
             return res.status(400).json({ error: 'Message is required' });
         }
 
-        if (!process.env.OPENAI_API_KEY) {
-            return res.status(500).json({ error: 'OpenAI API key not configured' });
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(500).json({ error: 'Gemini API key not configured' });
         }
 
-        // Prepare messages for ChatGPT
-        const messages = [
-            {
-                role: 'system',
-                content: 'You are a helpful college assistant chatbot for College Guide app. You help students with academic questions, course information, exam schedules, and general college-related queries. Be friendly, concise, and helpful.'
-            },
-            ...(conversationHistory || []),
-            {
-                role: 'user',
-                content: message
-            }
-        ];
+        // Get the model
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-        // Call OpenAI API
-        const completion = await openai.chat.completions.create({
-            model: 'gpt-3.5-turbo',
-            messages: messages,
-            max_tokens: 500,
-            temperature: 0.7
+        // Prepare history for Gemini
+        // Gemini uses 'user' and 'model' roles
+        const history = (conversationHistory || []).map(msg => ({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.content }]
+        }));
+
+        // Start chat with history
+        const chat = model.startChat({
+            history: history,
+            generationConfig: {
+                maxOutputTokens: 500,
+            },
         });
 
-        const reply = completion.choices[0].message.content;
+        // Send message
+        const result = await chat.sendMessage(message);
+        const response = await result.response;
+        const text = response.text();
 
         res.json({
             success: true,
-            reply: reply,
-            usage: completion.usage
+            reply: text,
         });
 
     } catch (error) {
-        console.error('ChatGPT API Error:', error);
-        console.error('Error details:', {
-            code: error.code,
-            type: error.type,
-            message: error.message,
-            status: error.status
-        });
+        console.error('Gemini API Error:', error);
         
-        if (error.code === 'insufficient_quota') {
-            return res.status(402).json({ 
-                error: 'OpenAI API quota exceeded. Please add credits to your OpenAI account.' 
-            });
-        }
-        
-        if (error.code === 'invalid_api_key' || error.status === 401) {
-            return res.status(401).json({ 
-                error: 'Invalid OpenAI API key. Please check your API key.' 
-            });
-        }
-
         res.status(500).json({ 
-            error: 'Error communicating with ChatGPT',
-            message: error.message,
-            details: error.code || error.type
+            error: 'Error communicating with Gemini',
+            message: error.message
         });
     }
 });

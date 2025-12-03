@@ -11,14 +11,14 @@ function isLoggedIn() {
 // Get current user
 async function getCurrentUser() {
     if (!isLoggedIn()) return null;
-    
+
     try {
         const response = await fetch(`${API_URL}/auth/me`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
         });
-        
+
         if (response.ok) {
             const data = await response.json();
             return data.user;
@@ -35,16 +35,16 @@ function updateAuthUI() {
     const loginBtn = document.getElementById('openLogin');
     const signupBtn = document.getElementById('openSignup');
     const navButtons = loginBtn?.parentElement;
-    
+
     if (isLoggedIn() && navButtons) {
         const userName = localStorage.getItem('userName') || 'User';
         navButtons.innerHTML = `
             <span class="text-white mr-4">Welcome, ${userName}!</span>
             <button id="logoutBtn" class="px-4 py-2 rounded-lg bg-white text-indigo-600 font-semibold hover:bg-indigo-100">Logout</button>
         `;
-        
+
         // Add logout handler
-        document.getElementById('logoutBtn')?.addEventListener('click', function() {
+        document.getElementById('logoutBtn')?.addEventListener('click', function () {
             localStorage.removeItem('token');
             localStorage.removeItem('userName');
             location.reload();
@@ -56,20 +56,20 @@ function updateAuthUI() {
 document.addEventListener('DOMContentLoaded', function () {
     AOS.init();
     feather.replace();
-    
+
     // Update UI based on login state
     updateAuthUI();
 
     // Auth Modals
-    function modal(id){ return document.getElementById(id); }
-    function show(el){ el.classList.remove('hidden'); }
-    function hide(el){ el.classList.add('hidden'); }
-    
+    function modal(id) { return document.getElementById(id); }
+    function show(el) { el.classList.remove('hidden'); }
+    function hide(el) { el.classList.add('hidden'); }
+
     var loginBtn = document.getElementById('openLogin');
     var signupBtn = document.getElementById('openSignup');
 
     // Build modal markup once
-    if (!document.getElementById('auth-modals')){
+    if (!document.getElementById('auth-modals')) {
         var div = document.createElement('div');
         div.id = 'auth-modals';
         div.innerHTML = `
@@ -101,153 +101,153 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     var backdrop = document.getElementById('modal-backdrop');
-    loginBtn && loginBtn.addEventListener('click', function(){ show(backdrop); show(modal('loginModal')); });
-    signupBtn && signupBtn.addEventListener('click', function(){ show(backdrop); show(modal('signupModal')); });
-    document.querySelectorAll('[data-close]')?.forEach(function(btn){
-        btn.addEventListener('click', function(){ hide(backdrop); hide(modal(btn.getAttribute('data-close'))); });
+    loginBtn && loginBtn.addEventListener('click', function () { show(backdrop); show(modal('loginModal')); });
+    signupBtn && signupBtn.addEventListener('click', function () { show(backdrop); show(modal('signupModal')); });
+    document.querySelectorAll('[data-close]')?.forEach(function (btn) {
+        btn.addEventListener('click', function () { hide(backdrop); hide(modal(btn.getAttribute('data-close'))); });
     });
 
-    async function api(path, method, body){
-        var res = await fetch(`${API_URL}${path}`, { 
-            method, 
-            headers: { 
-                'Content-Type':'application/json', 
-                'Authorization': localStorage.getItem('token') ? 'Bearer '+localStorage.getItem('token') : '' 
-            }, 
-            body: body ? JSON.stringify(body) : undefined 
+    async function api(path, method, body) {
+        var res = await fetch(`${API_URL}${path}`, {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': localStorage.getItem('token') ? 'Bearer ' + localStorage.getItem('token') : ''
+            },
+            body: body ? JSON.stringify(body) : undefined
         });
-        var data = await res.json().catch(function(){ return {}; });
+        var data = await res.json().catch(function () { return {}; });
         if (!res.ok) throw new Error(data.error || 'Request failed');
         return data;
     }
 
     var loginForm = document.getElementById('loginForm');
     var signupForm = document.getElementById('signupForm');
-    
-    loginForm && loginForm.addEventListener('submit', async function(e){
+
+    loginForm && loginForm.addEventListener('submit', async function (e) {
         e.preventDefault();
         document.getElementById('loginError').textContent = '';
         var form = new FormData(loginForm);
         try {
-            var out = await api('/auth/login','POST',{ 
-                email: form.get('email'), 
-                password: form.get('password') 
+            var out = await api('/auth/login', 'POST', {
+                email: form.get('email'),
+                password: form.get('password')
             });
             localStorage.setItem('token', out.token);
             localStorage.setItem('userName', out.user.name);
-            hide(backdrop); 
+            hide(backdrop);
             hide(modal('loginModal'));
-            alert('Logged in as '+out.user.name);
+            alert('Logged in as ' + out.user.name);
             updateAuthUI();
             loadTodos(); // Reload todos after login
-        } catch(err){ 
-            document.getElementById('loginError').textContent = err.message; 
+        } catch (err) {
+            document.getElementById('loginError').textContent = err.message;
         }
     });
-    
-    signupForm && signupForm.addEventListener('submit', async function(e){
+
+    signupForm && signupForm.addEventListener('submit', async function (e) {
         e.preventDefault();
         document.getElementById('signupError').textContent = '';
         var form = new FormData(signupForm);
         try {
-            var out = await api('/auth/register','POST',{ 
-                name: form.get('name'), 
-                email: form.get('email'), 
-                password: form.get('password') 
+            var out = await api('/auth/register', 'POST', {
+                name: form.get('name'),
+                email: form.get('email'),
+                password: form.get('password')
             });
             localStorage.setItem('token', out.token);
             localStorage.setItem('userName', out.user.name);
-            hide(backdrop); 
+            hide(backdrop);
             hide(modal('signupModal'));
-            alert('Welcome '+out.user.name+'!');
+            alert('Welcome ' + out.user.name + '!');
             updateAuthUI();
             loadTodos(); // Load todos after signup
-        } catch(err){ 
-            document.getElementById('signupError').textContent = err.message; 
+        } catch (err) {
+            document.getElementById('signupError').textContent = err.message;
         }
     });
 
     // Department Timetable
     var tabs = document.querySelectorAll('.dept-tab');
     var panels = document.querySelectorAll('.dept-panel');
-    
+
     // Shared timeslots
-    var timeSlots = ['09:00-09:55','10:00-10:55','11:00-11:55','12:00-12:55','01:00-02:00','02:00-02:55','03:00-03:55','04:00-04:55','05:00-05:55'];
-    var days = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+    var timeSlots = ['09:00-09:55', '10:00-10:55', '11:00-11:55', '12:00-12:55', '01:00-02:00', '02:00-02:55', '03:00-03:55', '04:00-04:55', '05:00-05:55'];
+    var days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
     // Color palette
     var slotColors = {
-        'L':'#ffe08a', 'F':'#ffd1dc', 'E':'#ffab40', 'H':'#ffee58', 'G':'#3b82f6',
-        'I':'#ec4899', 'B':'#8b5cf6', 'U':'#9ca3af', 'Z':'#10b981', 'P':'#7c3aed', 
-        'V':'#34d399', 'D':'#93c5fd', 'X':'#fbbf24'
+        'L': '#ffe08a', 'F': '#ffd1dc', 'E': '#ffab40', 'H': '#ffee58', 'G': '#3b82f6',
+        'I': '#ec4899', 'B': '#8b5cf6', 'U': '#9ca3af', 'Z': '#10b981', 'P': '#7c3aed',
+        'V': '#34d399', 'D': '#93c5fd', 'X': '#fbbf24'
     };
 
     // Department data
     var departments = {
         ece: {
             legend: {
-                'L':'Linear Algebra & Matrix Analysis',
-                'F':'Calculus',
-                'E':'Problem Solving with C Programming',
-                'H':'Digital Electronics using Verilog',
-                'G':'Internet of Things',
-                'I':'ILC (Advance1)',
-                'X':'IT Workshop: Full Stack Prototyping with AI Support',
-                'U':'Environmental Studies',
-                'Z':'Entrepreneurship & Design Thinking',
-                'B':'ILC (Basic)',
-                'P':'ILC (Advance2)'
+                'L': 'Linear Algebra & Matrix Analysis',
+                'F': 'Calculus',
+                'E': 'Problem Solving with C Programming',
+                'H': 'Digital Electronics using Verilog',
+                'G': 'Internet of Things',
+                'I': 'ILC (Advance1)',
+                'X': 'IT Workshop: Full Stack Prototyping with AI Support',
+                'U': 'Environmental Studies',
+                'Z': 'Entrepreneurship & Design Thinking',
+                'B': 'ILC (Basic)',
+                'P': 'ILC (Advance2)'
             },
             grid: {
-                'Monday'   : ['', 'X','H','H','', 'P','P','E','E'],
-                'Tuesday'  : ['X','X','L','P','','H','F','I','I'],
-                'Wednesday': ['H','G','','E','','','Z','F','F'],
-                'Thursday' : ['G','G','I','B','','Z','Z','E',''],
-                'Friday'   : ['', 'U', 'U','','', 'B','B','L','L']
+                'Monday': ['', 'X', 'H', 'H', '', 'P', 'P', 'E', 'E'],
+                'Tuesday': ['X', 'X', 'L', 'P', '', 'H', 'F', 'I', 'I'],
+                'Wednesday': ['H', 'G', '', 'E', '', '', 'Z', 'F', 'F'],
+                'Thursday': ['G', 'G', 'I', 'B', '', 'Z', 'Z', 'E', ''],
+                'Friday': ['', 'U', 'U', '', '', 'B', 'B', 'L', 'L']
             }
         },
         cse: {
             legend: {
-                'E':'Linear Algebra & Matrix Analysis',
-                'H':'Calculus',
-                'L':'Problem Solving with C Programming',
-                'F':'Digital Electronics using Verilog',
-                'G':'Internet of Things',
-                'I':'ILC (Advance1)',
-                'V':'IT Workshop with AI Support',
-                'D':'Environmental Studies',
-                'X':'Entrepreneurship & Design Thinking',
-                'B':'ILC (Basic)',
-                'P':'ILC (Advance2)'
+                'E': 'Linear Algebra & Matrix Analysis',
+                'H': 'Calculus',
+                'L': 'Problem Solving with C Programming',
+                'F': 'Digital Electronics using Verilog',
+                'G': 'Internet of Things',
+                'I': 'ILC (Advance1)',
+                'V': 'IT Workshop with AI Support',
+                'D': 'Environmental Studies',
+                'X': 'Entrepreneurship & Design Thinking',
+                'B': 'ILC (Basic)',
+                'P': 'ILC (Advance2)'
             },
             grid: {
-                'Monday'   : ['', 'H','H','F','', 'P','P','E','E'],
-                'Tuesday'  : ['X','X','V','P','', 'H','', 'I','I'],
-                'Wednesday': ['','G','X','E', '', 'V','V','F','F'],
-                'Thursday' : ['', '', 'I','B','', '','L','D','D'],
-                'Friday'   : ['G','G','L','F','', 'B','B','L','L']
+                'Monday': ['', 'H', 'H', 'F', '', 'P', 'P', 'E', 'E'],
+                'Tuesday': ['X', 'X', 'V', 'P', '', 'H', '', 'I', 'I'],
+                'Wednesday': ['', 'G', 'X', 'E', '', 'V', 'V', 'F', 'F'],
+                'Thursday': ['', '', 'I', 'B', '', '', 'L', 'D', 'D'],
+                'Friday': ['G', 'G', 'L', 'F', '', 'B', 'B', 'L', 'L']
             }
         },
         dsai: {
             legend: {
-                'E':'Linear Algebra & Matrix Analysis',
-                'D':'Calculus',
-                'L':'Problem Solving with C Programming',
-                'G':'Digital Electronics using Verilog',
-                'F':'Internet of Things',
-                'I':'ILC (Advance1)',
-                'Z':'IT Workshop with AI Support',
-                'V':'Environmental Studies',
-                'U':'Entrepreneurship & Design Thinking',
-                'B':'ILC (Basic)',
-                'P':'ILC (Advance2)'
+                'E': 'Linear Algebra & Matrix Analysis',
+                'D': 'Calculus',
+                'L': 'Problem Solving with C Programming',
+                'G': 'Digital Electronics using Verilog',
+                'F': 'Internet of Things',
+                'I': 'ILC (Advance1)',
+                'Z': 'IT Workshop with AI Support',
+                'V': 'Environmental Studies',
+                'U': 'Entrepreneurship & Design Thinking',
+                'B': 'ILC (Basic)',
+                'P': 'ILC (Advance2)'
             },
             grid: {
-                'Monday'   : ['G','U','', '', '', 'P','P','E','E'],
-                'Tuesday'  : ['', 'D','L','P','', '', 'F','I','I'],
-                'Wednesday': ['', 'G','Z','E', '', 'V','V','F','F'],
-                'Thursday' : ['G','G','I','B','', 'Z','Z','D','D'],
-                'Friday'   : ['U','U','L','', '', 'B','B','L','L']
+                'Monday': ['G', 'U', '', '', '', 'P', 'P', 'E', 'E'],
+                'Tuesday': ['', 'D', 'L', 'P', '', '', 'F', 'I', 'I'],
+                'Wednesday': ['', 'G', 'Z', 'E', '', 'V', 'V', 'F', 'F'],
+                'Thursday': ['G', 'G', 'I', 'B', '', 'Z', 'Z', 'D', 'D'],
+                'Friday': ['U', 'U', 'L', '', '', 'B', 'B', 'L', 'L']
             }
         }
     };
@@ -255,42 +255,42 @@ document.addEventListener('DOMContentLoaded', function () {
     function buildTable(deptKey, mountEl, legendEl) {
         var data = departments[deptKey];
         if (!data) return;
-        
+
         var table = document.createElement('table');
         table.className = 'w-full text-sm';
-        
+
         var thead = document.createElement('thead');
         thead.className = 'bg-indigo-100';
         var headRow = document.createElement('tr');
-        var thTime = document.createElement('th'); 
-        thTime.className='p-3 text-left'; 
-        thTime.textContent='Day/Time'; 
+        var thTime = document.createElement('th');
+        thTime.className = 'p-3 text-left';
+        thTime.textContent = 'Day/Time';
         headRow.appendChild(thTime);
-        
-        timeSlots.forEach(function (t) { 
-            var th=document.createElement('th'); 
-            th.className='p-3 text-left whitespace-nowrap'; 
-            th.textContent=t; 
-            headRow.appendChild(th); 
+
+        timeSlots.forEach(function (t) {
+            var th = document.createElement('th');
+            th.className = 'p-3 text-left whitespace-nowrap';
+            th.textContent = t;
+            headRow.appendChild(th);
         });
         thead.appendChild(headRow);
         table.appendChild(thead);
 
         var tbody = document.createElement('tbody');
-        days.forEach(function(day){
+        days.forEach(function (day) {
             var row = document.createElement('tr');
             row.className = 'border-b hover:bg-gray-50';
-            var tdDay = document.createElement('td'); 
-            tdDay.className='p-3 font-semibold'; 
-            tdDay.textContent=day; 
+            var tdDay = document.createElement('td');
+            tdDay.className = 'p-3 font-semibold';
+            tdDay.textContent = day;
             row.appendChild(tdDay);
-            
+
             var slots = data.grid[day] || [];
-            for (var i=0;i<timeSlots.length;i++){
+            for (var i = 0; i < timeSlots.length; i++) {
                 var code = slots[i] || '';
                 var td = document.createElement('td');
-                td.className='p-2 text-center';
-                if (code && code !== 'X'){
+                td.className = 'p-2 text-center';
+                if (code && code !== 'X') {
                     td.textContent = code;
                     td.style.backgroundColor = slotColors[code] || '#e5e7eb';
                     td.className += ' rounded text-gray-900 font-medium';
@@ -315,26 +315,26 @@ document.addEventListener('DOMContentLoaded', function () {
         mountEl.appendChild(wrapper);
 
         // Legend
-        if (legendEl){
+        if (legendEl) {
             legendEl.innerHTML = '';
-            var legendTitle = document.createElement('h3'); 
-            legendTitle.className='text-sm font-semibold text-gray-700 mb-2'; 
-            legendTitle.textContent='Slot Legend';
+            var legendTitle = document.createElement('h3');
+            legendTitle.className = 'text-sm font-semibold text-gray-700 mb-2';
+            legendTitle.textContent = 'Slot Legend';
             legendEl.appendChild(legendTitle);
-            
-            var list = document.createElement('div'); 
-            list.className='grid sm:grid-cols-2 md:grid-cols-3 gap-2';
-            Object.keys(data.legend).forEach(function(code){
-                var item = document.createElement('div'); 
-                item.className='flex items-center gap-2';
-                var swatch = document.createElement('span'); 
-                swatch.className='inline-block w-4 h-4 rounded'; 
+
+            var list = document.createElement('div');
+            list.className = 'grid sm:grid-cols-2 md:grid-cols-3 gap-2';
+            Object.keys(data.legend).forEach(function (code) {
+                var item = document.createElement('div');
+                item.className = 'flex items-center gap-2';
+                var swatch = document.createElement('span');
+                swatch.className = 'inline-block w-4 h-4 rounded';
                 swatch.style.backgroundColor = slotColors[code] || '#e5e7eb';
-                var label = document.createElement('span'); 
-                label.className='text-xs text-gray-700'; 
+                var label = document.createElement('span');
+                label.className = 'text-xs text-gray-700';
                 label.textContent = code + ' - ' + data.legend[code];
-                item.appendChild(swatch); 
-                item.appendChild(label); 
+                item.appendChild(swatch);
+                item.appendChild(label);
                 list.appendChild(item);
             });
             legendEl.appendChild(list);
@@ -344,21 +344,21 @@ document.addEventListener('DOMContentLoaded', function () {
     function activate(targetId) {
         panels.forEach(function (p) { p.classList.add('hidden'); });
         tabs.forEach(function (t) {
-            t.classList.remove('bg-indigo-600','text-white','shadow','hover:bg-indigo-700');
-            t.classList.add('bg-gray-100','text-gray-700','hover:bg-gray-200');
+            t.classList.remove('bg-indigo-600', 'text-white', 'shadow', 'hover:bg-indigo-700');
+            t.classList.add('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
         });
-        
+
         var target = document.querySelector(targetId);
         if (target) { target.classList.remove('hidden'); }
-        
-        var activeTab = Array.prototype.find.call(tabs, function (t) { 
-            return t.getAttribute('data-target') === targetId; 
+
+        var activeTab = Array.prototype.find.call(tabs, function (t) {
+            return t.getAttribute('data-target') === targetId;
         });
         if (activeTab) {
-            activeTab.classList.remove('bg-gray-100','text-gray-700','hover:bg-gray-200');
-            activeTab.classList.add('bg-indigo-600','text-white','shadow','hover:bg-indigo-700');
+            activeTab.classList.remove('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
+            activeTab.classList.add('bg-indigo-600', 'text-white', 'shadow', 'hover:bg-indigo-700');
         }
-        
+
         // Build for current panel
         var mount = target.querySelector('.timetable-mount');
         var legend = target.querySelector('.legend-mount');
@@ -369,11 +369,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     tabs.forEach(function (tab) {
-        tab.addEventListener('click', function () { 
-            activate(tab.getAttribute('data-target')); 
+        tab.addEventListener('click', function () {
+            activate(tab.getAttribute('data-target'));
         });
     });
-    
+
     // Ensure first tab visible on load
     var initial = document.querySelector('.dept-tab')?.getAttribute('data-target');
     if (initial) { activate(initial); }
@@ -386,7 +386,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Load todos from backend
     async function loadTodos() {
         if (!todoList) return;
-        
+
         if (!isLoggedIn()) {
             todoList.innerHTML = '<li class="text-center text-gray-500 py-4">Please log in to view your todos</li>';
             return;
@@ -395,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const response = await api('/todos', 'GET');
             todoList.innerHTML = '';
-            
+
             if (response.todos && response.todos.length > 0) {
                 response.todos.forEach(todo => {
                     addTodoToDOM(todo);
@@ -415,7 +415,7 @@ document.addEventListener('DOMContentLoaded', function () {
         li.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition';
         li.dataset.todoId = todo._id;
         if (todo.completed) li.classList.add('completed');
-        
+
         li.innerHTML = `
             <div class="flex items-center flex-1">
                 <input type="checkbox" ${todo.completed ? 'checked' : ''} class="mr-3 h-5 w-5 text-indigo-600 rounded">
@@ -425,17 +425,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 <i data-feather="trash-2" class="h-4 w-4"></i>
             </button>
         `;
-        
+
         todoList.appendChild(li);
         feather.replace();
-        
+
         // Checkbox toggle
-        li.querySelector('input[type="checkbox"]').addEventListener('change', async function(e) {
+        li.querySelector('input[type="checkbox"]').addEventListener('change', async function (e) {
             const completed = e.target.checked;
             li.classList.toggle('completed');
             li.querySelector('.todo-text').classList.toggle('line-through');
             li.querySelector('.todo-text').classList.toggle('text-gray-500');
-            
+
             try {
                 await api(`/todos/${todo._id}`, 'PUT', { completed });
             } catch (error) {
@@ -447,13 +447,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 li.querySelector('.todo-text').classList.toggle('text-gray-500');
             }
         });
-        
+
         // Delete button
-        li.querySelector('.delete-todo').addEventListener('click', async function() {
+        li.querySelector('.delete-todo').addEventListener('click', async function () {
             try {
                 await api(`/todos/${todo._id}`, 'DELETE');
                 li.remove();
-                
+
                 // Check if list is empty
                 if (todoList.children.length === 0) {
                     todoList.innerHTML = '<li class="text-center text-gray-500 py-4">No todos yet. Add one above!</li>';
@@ -466,24 +466,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Add new todo
-    addTodoBtn && addTodoBtn.addEventListener('click', async function() {
+    addTodoBtn && addTodoBtn.addEventListener('click', async function () {
         const text = todoInput.value.trim();
-        
+
         if (!text) return;
-        
+
         if (!isLoggedIn()) {
             alert('Please log in to add todos');
             return;
         }
-        
+
         try {
             const response = await api('/todos', 'POST', { text });
-            
+
             // Remove "no todos" message if present
             if (todoList.querySelector('.text-gray-500')) {
                 todoList.innerHTML = '';
             }
-            
+
             addTodoToDOM(response.todo);
             todoInput.value = '';
         } catch (error) {
@@ -493,7 +493,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Add todo on Enter key
-    todoInput && todoInput.addEventListener('keypress', function(e) {
+    todoInput && todoInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             addTodoBtn.click();
         }
@@ -509,11 +509,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const chatInput = document.getElementById('chatInput');
     const chatSend = document.getElementById('chatSend');
     const chatMessages = document.getElementById('chatMessages');
-    
+
     let conversationHistory = [];
 
     // Toggle chatbot window
-    chatbotToggle && chatbotToggle.addEventListener('click', function() {
+    chatbotToggle && chatbotToggle.addEventListener('click', function () {
         chatbotWindow.classList.toggle('hidden');
         if (!chatbotWindow.classList.contains('hidden')) {
             chatInput.focus();
@@ -521,7 +521,7 @@ document.addEventListener('DOMContentLoaded', function () {
         feather.replace();
     });
 
-    chatbotClose && chatbotClose.addEventListener('click', function() {
+    chatbotClose && chatbotClose.addEventListener('click', function () {
         chatbotWindow.classList.add('hidden');
     });
 
@@ -529,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function addMessage(message, isUser = false) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `flex items-start space-x-2 ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`;
-        
+
         messageDiv.innerHTML = `
             <div class="${isUser ? 'bg-indigo-600' : 'bg-indigo-600'} text-white rounded-full p-2">
                 <i data-feather="${isUser ? 'user' : 'bot'}" class="h-4 w-4"></i>
@@ -538,7 +538,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <p class="text-sm ${isUser ? 'text-indigo-900' : 'text-gray-800'}">${message}</p>
             </div>
         `;
-        
+
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
         feather.replace();
@@ -609,7 +609,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (error) {
             removeTypingIndicator();
             console.error('Chatbot error:', error);
-            addMessage('Sorry, I encountered an error. Please try again or make sure the OpenAI API key is configured.', false);
+            addMessage('Sorry, I encountered an error. Please try again or make sure the Gemini API key is configured.', false);
         }
     }
 
@@ -617,7 +617,7 @@ document.addEventListener('DOMContentLoaded', function () {
     chatSend && chatSend.addEventListener('click', sendMessage);
 
     // Send message on Enter key
-    chatInput && chatInput.addEventListener('keypress', function(e) {
+    chatInput && chatInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
