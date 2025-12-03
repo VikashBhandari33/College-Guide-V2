@@ -21,7 +21,7 @@ router.post('/message', async (req, res) => {
         }
 
         // Get the model
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         // Prepare history for Gemini
         // Gemini uses 'user' and 'model' roles
@@ -50,8 +50,8 @@ router.post('/message', async (req, res) => {
 
     } catch (error) {
         console.error('Gemini API Error:', error);
-        
-        res.status(500).json({ 
+
+        res.status(500).json({
             error: 'Error communicating with Gemini',
             message: error.message
         });
